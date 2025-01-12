@@ -88,6 +88,7 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
             tax = tax
         )
     }
+    //chk commit
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
