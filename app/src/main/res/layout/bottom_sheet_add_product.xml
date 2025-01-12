@@ -4,18 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
 
         <TextView
+            android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:text="@string/add_product"
-            android:textAppearance="?attr/textAppearanceHeadline6" />
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Product Type Dropdown -->
         <com.google.android.material.textfield.TextInputLayout
@@ -23,8 +24,9 @@
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="@string/product_type">
+            android:layout_marginTop="16dp"
+            android:hint="@string/product_type"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
             <AutoCompleteTextView
                 android:id="@+id/productTypeDropdown"
@@ -40,8 +42,9 @@
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="@string/product_name">
+            android:layout_marginTop="16dp"
+            android:hint="@string/product_name"
+            app:layout_constraintTop_toBottomOf="@id/productTypeLayout">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etProductName"
@@ -57,8 +60,9 @@
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="@string/selling_price">
+            android:layout_marginTop="16dp"
+            android:hint="@string/selling_price"
+            app:layout_constraintTop_toBottomOf="@id/productNameLayout">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPrice"
@@ -74,8 +78,9 @@
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="@string/tax_rate">
+            android:layout_marginTop="16dp"
+            android:hint="@string/tax_rate"
+            app:layout_constraintTop_toBottomOf="@id/priceLayout">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etTax"
@@ -91,26 +96,44 @@
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="16dp"
             android:text="@string/select_image"
-            app:icon="@drawable/ic_image" />
+            app:icon="@drawable/ic_image"
+            app:layout_constraintTop_toBottomOf="@id/taxLayout" />
 
         <!-- Selected Image Preview -->
         <ImageView
             android:id="@+id/ivSelectedImage"
             android:layout_width="120dp"
             android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="16dp"
             android:visibility="gone"
-            android:scaleType="centerCrop" />
+            android:scaleType="centerCrop"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnSelectImage" />
 
         <!-- Submit Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/submit" />
+            android:layout_marginTop="16dp"
+            android:text="@string/submit"
+            app:layout_constraintTop_toBottomOf="@id/ivSelectedImage" />
 
-    </LinearLayout>
+        <!-- Progress Bar -->
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:indicatorColor="@color/primary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.core.widget.NestedScrollView>
