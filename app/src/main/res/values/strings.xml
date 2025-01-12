@@ -1,6 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">testproject</string>
+    <string name="app_name">TestProject</string>
     <string name="products">Products</string>
     <string name="search_products">Search products</string>
     <string name="add_product">Add Product</string>
+    <string name="product_type">Product Type</string>
+    <string name="product_name">Product Name</string>
+    <string name="selling_price">Selling Price</string>
+    <string name="tax_rate">Tax Rate (%)</string>
+    <string name="select_image">Select Image</string>
+    <string name="submit">Submit</string>
+    <string name="validation_error">Please fill all required fields</string>
+    <string name="success">Product added successfully</string>
+    <string name="error">Something went wrong</string>
 </resources>

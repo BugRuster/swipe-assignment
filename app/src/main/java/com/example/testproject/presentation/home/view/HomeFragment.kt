@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.testproject.R
 import com.example.testproject.databinding.FragmentHomeBinding
 import com.example.testproject.domain.model.Product
+import com.example.testproject.presentation.addproduct.view.AddProductBottomSheet
 import com.example.testproject.presentation.home.adapter.ProductAdapter
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -40,9 +41,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
     }
 
+// In HomeFragment.kt, update the setupClickListeners() function:
+
     private fun setupClickListeners() {
         binding.fabAddProduct.setOnClickListener {
-            // TODO: Navigate to Add Product screen
+            AddProductBottomSheet().show(childFragmentManager, AddProductBottomSheet.TAG)
         }
     }
 
