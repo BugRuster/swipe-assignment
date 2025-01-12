@@ -15,9 +15,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.testproject.R
 import com.example.testproject.databinding.BottomSheetAddProductBinding
 import com.example.testproject.presentation.addproduct.viewmodel.AddProductViewModel
+import com.example.testproject.presentation.shared.SharedViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class AddProductBottomSheet : BottomSheetDialogFragment() {
@@ -26,10 +28,11 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
 
     private val viewModel: AddProductViewModel by viewModel()
+    private val sharedViewModel: SharedViewModel by activityViewModel()
 
     private val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
-            viewModel.setSelectedImage(it)
+            viewModel.setSelectedImage(requireContext(), it)
             binding.ivSelectedImage.apply {
                 setImageURI(it)
                 isVisible = true
@@ -88,7 +91,6 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
             tax = tax
         )
     }
-    //chk commit
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -100,17 +102,16 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
                     when (state) {
                         is AddProductViewModel.UiState.Success -> {
                             Toast.makeText(context, getString(R.string.success), Toast.LENGTH_SHORT).show()
+                            // Trigger refresh of products list
+                            lifecycleScope.launch {
+                                sharedViewModel.refreshProducts()
+                            }
                             dismiss()
                         }
                         is AddProductViewModel.UiState.Error -> {
                             Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                         }
-                        is AddProductViewModel.UiState.Loading -> {
-                            // Loading state handled by visibility changes
-                        }
-                        is AddProductViewModel.UiState.Initial -> {
-                            // Initial state, no action needed
-                        }
+                        else -> { /* no-op */ }
                     }
                 }
             }

@@ -14,9 +14,11 @@ import com.example.testproject.databinding.FragmentHomeBinding
 import com.example.testproject.presentation.addproduct.view.AddProductBottomSheet
 import com.example.testproject.presentation.home.adapter.ProductAdapter
 import com.example.testproject.presentation.home.viewmodel.HomeViewModel
+import com.example.testproject.presentation.shared.SharedViewModel
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -25,6 +27,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val binding get() = _binding!!
 
     private val viewModel: HomeViewModel by viewModel()
+    private val sharedViewModel: SharedViewModel by activityViewModel()
     private val productAdapter = ProductAdapter()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -35,6 +38,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         setupSearchListener()
         setupClickListeners()
         observeUiState()
+        observeRefreshTrigger()
     }
 
     private fun setupRecyclerView() {
@@ -55,7 +59,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             AddProductBottomSheet().show(childFragmentManager, AddProductBottomSheet.TAG)
         }
 
-        binding.swipeRefresh?.setOnRefreshListener {
+        binding.swipeRefresh.setOnRefreshListener {
             viewModel.fetchProducts()
         }
     }
@@ -65,7 +69,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collectLatest { state ->
                     binding.progressBar.isVisible = state is HomeViewModel.UiState.Loading
-                    binding.swipeRefresh?.isRefreshing = state is HomeViewModel.UiState.Loading
+                    binding.swipeRefresh.isRefreshing = state is HomeViewModel.UiState.Loading
 
                     when (state) {
                         is HomeViewModel.UiState.Success -> {
@@ -78,6 +82,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             // Loading state handled by visibility changes
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private fun observeRefreshTrigger() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.refreshProducts.collect {
+                    viewModel.fetchProducts()
                 }
             }
         }

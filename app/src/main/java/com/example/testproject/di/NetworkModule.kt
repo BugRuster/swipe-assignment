@@ -4,8 +4,10 @@ import com.example.testproject.data.remote.ProductApi
 import com.example.testproject.data.repository.ProductRepository
 import com.example.testproject.presentation.addproduct.viewmodel.AddProductViewModel
 import com.example.testproject.presentation.home.viewmodel.HomeViewModel
+import com.example.testproject.presentation.shared.SharedViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -41,15 +43,22 @@ val networkModule = module {
     }
 
     single {
-        ProductRepository(get())
+        ProductRepository(
+            api = get(),
+            dao = get(),
+            context = androidContext()
+        )
     }
 
-    // ViewModels
     viewModel {
         HomeViewModel(get())
     }
 
     viewModel {
         AddProductViewModel(get())
+    }
+
+    viewModel {
+        SharedViewModel()
     }
 }

@@ -1,14 +1,17 @@
 package com.example.testproject.presentation.addproduct.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.testproject.data.repository.ProductRepository
+import com.example.testproject.utils.FileUtils
 import com.example.testproject.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
 class AddProductViewModel(
     private val repository: ProductRepository
@@ -17,10 +20,14 @@ class AddProductViewModel(
     private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    private var selectedImageUri: Uri? = null
+    private var selectedImageFile: File? = null
 
-    fun setSelectedImage(uri: Uri) {
-        selectedImageUri = uri
+    fun setSelectedImage(context: Context, uri: Uri) {
+        try {
+            selectedImageFile = FileUtils.getFile(context, uri)
+        } catch (e: Exception) {
+            _uiState.value = UiState.Error("Failed to process image: ${e.message}")
+        }
     }
 
     fun addProduct(
@@ -35,7 +42,7 @@ class AddProductViewModel(
                 productType = productType,
                 price = price,
                 tax = tax,
-                imageUri = selectedImageUri
+                imageFile = selectedImageFile
             ).collect { result ->
                 _uiState.value = when (result) {
                     is Resource.Success -> UiState.Success
@@ -48,6 +55,7 @@ class AddProductViewModel(
 
     fun resetState() {
         _uiState.value = UiState.Initial
+        selectedImageFile = null
     }
 
     sealed class UiState {

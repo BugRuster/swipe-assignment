@@ -41,6 +41,20 @@ android {
 }
 
 dependencies {
+    val roomVersion = "2.6.1"
+
+    // Room
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+
+
+    implementation ("androidx.work:work-runtime-ktx:2.7.1")
+
+    // NetworkInfo for checking connectivity
+    implementation("com.github.pwittchen:reactivenetwork-rx2:3.0.8")
+
     // Core Android
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
