@@ -46,10 +46,17 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textColor="@color/white"
+            android:clickable="false"
             app:chipBackgroundColor="@color/primary"
+            app:chipMinHeight="32dp"
+            app:ensureMinTouchTargetSize="false"
+            app:closeIconEnabled="false"
+            app:checkedIconEnabled="false"
+            app:chipIconEnabled="false"
             app:layout_constraintStart_toStartOf="@id/tvProductName"
             app:layout_constraintTop_toBottomOf="@id/tvProductName"
             tools:text="Product" />
+
 
         <TextView
             android:id="@+id/tvPrice"
