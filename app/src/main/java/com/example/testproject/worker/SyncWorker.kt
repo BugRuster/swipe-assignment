@@ -4,10 +4,17 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.testproject.data.local.AppDatabase
-import com.example.testproject.data.repository.ProductRepository
+import com.example.testproject.data.remote.ProductApi
 import com.example.testproject.utils.NetworkUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 
 class SyncWorker(
     context: Context,
@@ -15,25 +22,49 @@ class SyncWorker(
 ) : CoroutineWorker(context, params), KoinComponent {
 
     private val database: AppDatabase by inject()
-    private val repository: ProductRepository by inject()
+    private val api: ProductApi by inject()
 
-    override suspend fun doWork(): Result {
-        if (!NetworkUtils.isNetworkAvailable(applicationContext)) {
-            return Result.retry()
-        }
-
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
+            if (!NetworkUtils.isNetworkAvailable(applicationContext)) {
+                return@withContext Result.retry()
+            }
+
             val pendingProducts = database.productDao().getPendingUploads()
 
             pendingProducts.forEach { product ->
-                // TODO: Implement the upload logic for pending products
-                // This will be similar to your repository's addProduct function
-                // but will need to handle the local image file
+                val productNameBody = product.productName.toRequestBody("text/plain".toMediaTypeOrNull())
+                val productTypeBody = product.productType.toRequestBody("text/plain".toMediaTypeOrNull())
+                val priceBody = product.price.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+                val taxBody = product.tax.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+
+                val imagePart = product.localImagePath?.let { path ->
+                    val file = File(path)
+                    if (file.exists()) {
+                        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+                        MultipartBody.Part.createFormData("files[]", file.name, requestFile)
+                    } else null
+                }
+
+                val response = api.addProduct(
+                    productName = productNameBody,
+                    productType = productTypeBody,
+                    price = priceBody,
+                    tax = taxBody,
+                    file = imagePart
+                )
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    database.productDao().updateUploadedProduct(
+                        id = product.id,
+                        imageUrl = response.body()?.productDetails?.image
+                    )
+                }
             }
 
-            return Result.success()
+            Result.success()
         } catch (e: Exception) {
-            return Result.retry()
+            Result.retry()
         }
     }
 

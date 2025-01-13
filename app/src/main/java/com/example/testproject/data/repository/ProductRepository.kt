@@ -7,6 +7,7 @@ import com.example.testproject.data.remote.ProductApi
 import com.example.testproject.domain.model.Product
 import com.example.testproject.utils.NetworkUtils
 import com.example.testproject.utils.Resource
+import com.example.testproject.utils.networkBoundResource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -20,48 +21,30 @@ class ProductRepository(
     private val dao: ProductDao,
     private val context: Context
 ) {
-    fun getProducts(): Flow<Resource<List<Product>>> = flow {
-        emit(Resource.Loading())
-        try {
-            if (NetworkUtils.isNetworkAvailable(context)) {
-                // Online - fetch from API
-                val response = api.getProducts()
-                if (response.isSuccessful) {
-                    val products = response.body()?.map { productResponse ->
-                        Product(
-                            productName = productResponse.productName,
-                            productType = productResponse.productType,
-                            price = productResponse.price,
-                            tax = productResponse.tax,
-                            imageUrl = productResponse.image
-                        )
-                    } ?: emptyList()
-
-                    // Save to local DB
-                    dao.insertProducts(products.map { it.toEntity() })
-                    emit(Resource.Success(products))
-                } else {
-                    // API error - fall back to local data
-                    val localProducts = dao.getAllProducts()
-                    emit(Resource.Success(localProducts.map { it.toDomain() }))
-                }
-            } else {
-                // Offline - get from local DB
-                val localProducts = dao.getAllProducts()
-                emit(Resource.Success(localProducts.map { it.toDomain() }))
-            }
-        } catch (e: Exception) {
-            // Error - try to get from local DB
-            try {
-                val localProducts = dao.getAllProducts()
-                emit(Resource.Success(localProducts.map { it.toDomain() }))
-            } catch (e2: Exception) {
-                emit(Resource.Error(e2.message ?: "An error occurred"))
-            }
+    suspend fun getProducts(): Flow<Resource<List<Product>>> = networkBoundResource(
+        query = {
+            dao.getAllProducts().map { it.toDomain() }
+        },
+        fetch = {
+            api.getProducts().body()?.map { response ->
+                Product(
+                    productName = response.productName,
+                    productType = response.productType,
+                    price = response.price,
+                    tax = response.tax,
+                    imageUrl = response.image
+                )
+            } ?: emptyList()
+        },
+        saveFetchResult = { remoteProducts ->
+            dao.insertProducts(remoteProducts.map { it.toEntity() })
+        },
+        shouldFetch = {
+            NetworkUtils.isNetworkAvailable(context)
         }
-    }
+    )
 
-    fun addProduct(
+    suspend fun addProduct(
         productName: String,
         productType: String,
         price: Double,
@@ -91,7 +74,6 @@ class ProductRepository(
                 )
 
                 if (response.isSuccessful && response.body()?.success == true) {
-                    // Save to local DB
                     dao.insertProduct(
                         ProductEntity(
                             productName = productName,
@@ -108,7 +90,7 @@ class ProductRepository(
                 }
             } else {
                 // Offline - Save locally with pending flag
-                val id = dao.insertProduct(
+                dao.insertProduct(
                     ProductEntity(
                         productName = productName,
                         productType = productType,
@@ -119,11 +101,7 @@ class ProductRepository(
                         localImagePath = imageFile?.absolutePath
                     )
                 )
-                if (id > 0) {
-                    emit(Resource.Success(Unit))
-                } else {
-                    emit(Resource.Error("Failed to save product locally"))
-                }
+                emit(Resource.Success(Unit))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "An error occurred"))
