@@ -20,7 +20,7 @@ This project is structured around the MVVM pattern, which consists of three main
 
 ### Benefits of MVVM
 
-* **Separation of Concerns:** Clearly separates UI logic from business logic, making the code more organized and easier to understand.
+* **Separation q Concerns:** Clearly separates UI logic from business logic, making the code more organized and easier to understand.
 * **Testability:** ViewModels can be easily unit-tested without needing to interact with the UI.
 * **Maintainability:** Changes to the UI or business logic are less likely to affect other parts of the application.
 * **Reusability:** ViewModels can be reused across different Views, reducing code duplication.

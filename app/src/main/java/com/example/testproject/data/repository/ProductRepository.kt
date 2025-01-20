@@ -16,6 +16,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
+// ProductRepository.kt
 class ProductRepository(
     private val api: ProductApi,
     private val dao: ProductDao,
@@ -37,7 +38,34 @@ class ProductRepository(
             } ?: emptyList()
         },
         saveFetchResult = { remoteProducts ->
-            dao.insertProducts(remoteProducts.map { it.toEntity() })
+            // Get all pending products
+            val pendingProducts = dao.getPendingUploads()
+            
+            // Get current max display order
+            val maxOrder = dao.getMaxDisplayOrder() ?: System.currentTimeMillis()
+            
+            // Clear cached products
+            dao.clearCachedProducts()
+            
+            // Convert remote products to entities with display order
+    // ProductRepository.kt
+// In the saveFetchResult lambda, fix the tax reference:
+
+val remoteEntities = remoteProducts.mapIndexed { index, product ->
+    ProductEntity(
+        productName = product.productName,
+        productType = product.productType,
+        price = product.price,
+        tax = product.tax,  // Changed from tax to product.tax
+        imageUrl = product.imageUrl,
+        pendingUpload = false,
+        createdAt = System.currentTimeMillis(),
+        displayOrder = maxOrder - ((1000 + index) * 1000L)
+    )
+}
+            
+            // Keep pending products as they are
+            dao.insertProducts(pendingProducts + remoteEntities)
         },
         shouldFetch = {
             NetworkUtils.isNetworkAvailable(context)
@@ -53,8 +81,11 @@ class ProductRepository(
     ): Flow<Resource<Unit>> = flow {
         emit(Resource.Loading())
         try {
+            val currentTime = System.currentTimeMillis()
+            val maxOrder = (dao.getMaxDisplayOrder() ?: currentTime) + 1000L
+
             if (NetworkUtils.isNetworkAvailable(context)) {
-                // Online - Add to server
+                // Online flow
                 val productNameBody = productName.toRequestBody("text/plain".toMediaTypeOrNull())
                 val productTypeBody = productType.toRequestBody("text/plain".toMediaTypeOrNull())
                 val priceBody = price.toString().toRequestBody("text/plain".toMediaTypeOrNull())
@@ -81,7 +112,9 @@ class ProductRepository(
                             price = price,
                             tax = tax,
                             imageUrl = response.body()?.productDetails?.image,
-                            pendingUpload = false
+                            pendingUpload = false,
+                            createdAt = currentTime,
+                            displayOrder = maxOrder
                         )
                     )
                     emit(Resource.Success(Unit))
@@ -89,7 +122,7 @@ class ProductRepository(
                     emit(Resource.Error("Failed to add product"))
                 }
             } else {
-                // Offline - Save locally with pending flag
+                // Offline flow
                 dao.insertProduct(
                     ProductEntity(
                         productName = productName,
@@ -98,7 +131,9 @@ class ProductRepository(
                         tax = tax,
                         imageUrl = null,
                         pendingUpload = true,
-                        localImagePath = imageFile?.absolutePath
+                        localImagePath = imageFile?.absolutePath,
+                        createdAt = currentTime,
+                        displayOrder = maxOrder
                     )
                 )
                 emit(Resource.Success(Unit))
@@ -108,21 +143,12 @@ class ProductRepository(
         }
     }
 
-    private fun Product.toEntity() = ProductEntity(
-        productName = productName,
-        productType = productType,
-        price = price,
-        tax = tax,
-        imageUrl = imageUrl,
-        pendingUpload = false
-    )
-
     private fun ProductEntity.toDomain() = Product(
         id = id,
         productName = productName,
         productType = productType,
         price = price,
         tax = tax,
-        imageUrl = imageUrl
+        imageUrl = if (pendingUpload) localImagePath else imageUrl
     )
 }

@@ -6,13 +6,16 @@ import com.example.testproject.data.local.AppDatabase
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
+// DatabaseModule.kt
 val databaseModule = module {
     single {
         Room.databaseBuilder(
             androidContext(),
             AppDatabase::class.java,
             "app_database"
-        ).build()
+        )
+        .fallbackToDestructiveMigration() // This will handle the migration
+        .build()
     }
 
     single { get<AppDatabase>().productDao() }

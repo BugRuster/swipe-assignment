@@ -39,23 +39,24 @@ class App : Application() {
         }
     }
 
-    private fun setupWorkManager() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
+// App.kt
+private fun setupWorkManager() {
+    val constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
 
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-            15, TimeUnit.MINUTES
-        )
-            .setConstraints(constraints)
-            .build()
+    val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+        SyncWorker.SYNC_INTERVAL, TimeUnit.MINUTES
+    )
+        .setConstraints(constraints)
+        .build()
 
-        workManager.enqueueUniquePeriodicWork(
-            SyncWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
-            syncRequest
-        )
-    }
+    workManager.enqueueUniquePeriodicWork(
+        SyncWorker.WORK_NAME,
+        ExistingPeriodicWorkPolicy.REPLACE, // Change to REPLACE
+        syncRequest
+    )
+}
 
     private fun observeConnectivity() {
         val connectivityObserver = ConnectivityObserver(this)

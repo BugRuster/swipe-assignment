@@ -11,6 +11,7 @@ import com.example.testproject.databinding.ItemProductBinding
 import com.example.testproject.domain.model.Product
 import java.text.NumberFormat
 import java.util.Locale
+import java.io.File
 
 class ProductAdapter : ListAdapter<Product, ProductAdapter.ProductViewHolder>(DiffCallback) {
 
@@ -27,32 +28,43 @@ class ProductAdapter : ListAdapter<Product, ProductAdapter.ProductViewHolder>(Di
         holder.bind(getItem(position))
     }
 
-    class ProductViewHolder(
-        private val binding: ItemProductBinding
-    ) : RecyclerView.ViewHolder(binding.root) {
+// ProductAdapter.kt
+class ProductViewHolder(
+    private val binding: ItemProductBinding
+) : RecyclerView.ViewHolder(binding.root) {
 
-        private val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+    private val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
 
-        fun bind(product: Product) {
-            binding.apply {
-                tvProductName.text = product.productName
-                chipProductType.text = product.productType
-                tvPrice.text = currencyFormatter.format(product.price)
-                tvTax.text = "${product.tax}% tax"
+    fun bind(product: Product) {
+        binding.apply {
+            tvProductName.text = product.productName
+            chipProductType.text = product.productType
+            tvPrice.text = currencyFormatter.format(product.price)
+            tvTax.text = "${product.tax}% tax"
 
-                // Load image using Coil
-                product.imageUrl?.let {
+            // Load image using Coil
+            product.imageUrl?.let {
+                if (it.startsWith("http")) {
+                    // Remote image
                     ivProduct.load(it) {
                         crossfade(true)
                         placeholder(android.R.drawable.ic_menu_gallery)
                         error(android.R.drawable.ic_menu_gallery)
                     }
-                } ?: run {
-                    ivProduct.setImageResource(android.R.drawable.ic_menu_gallery)
+                } else {
+                    // Local image
+                    ivProduct.load(File(it)) {
+                        crossfade(true)
+                        placeholder(android.R.drawable.ic_menu_gallery)
+                        error(android.R.drawable.ic_menu_gallery)
+                    }
                 }
+            } ?: run {
+                ivProduct.setImageResource(android.R.drawable.ic_menu_gallery)
             }
         }
     }
+}
 
     private object DiffCallback : DiffUtil.ItemCallback<Product>() {
         override fun areItemsTheSame(oldItem: Product, newItem: Product): Boolean {
