@@ -1,7 +1,9 @@
+// AddProductBottomSheet.kt
 package com.example.testproject.presentation.addproduct.view
 
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputFilter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -53,9 +55,20 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupProductTypeDropdown()
+        setupInputFilters()
         setupSubmitButton()
         setupImageSelection()
         observeUiState()
+    }
+
+    private fun setupInputFilters() {
+        binding.etPrice.filters = arrayOf(InputFilter { source, _, _, _, _, _ ->
+            if (source.toString().matches("^\\d*\\.?\\d*$".toRegex())) source else ""
+        })
+
+        binding.etTax.filters = arrayOf(InputFilter { source, _, _, _, _, _ ->
+            if (source.toString().matches("^\\d*\\.?\\d*$".toRegex())) source else ""
+        })
     }
 
     private fun setupProductTypeDropdown() {
@@ -76,6 +89,74 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
         binding.btnSelectImage.setOnClickListener {
             getContent.launch("image/*")
         }
+    }
+
+    private fun isValidPrice(price: String): Boolean {
+        return try {
+            val value = price.toDouble()
+            value > 0
+        } catch (e: NumberFormatException) {
+            false
+        }
+    }
+
+    private fun isValidTax(tax: String): Boolean {
+        return try {
+            val value = tax.toDouble()
+            value >= 0 && value <= 100
+        } catch (e: NumberFormatException) {
+            false
+        }
+    }
+
+    private fun validateInputs(): Boolean {
+        var isValid = true
+
+        // Validate Product Type
+        if (binding.productTypeDropdown.text.isNullOrEmpty()) {
+            binding.productTypeLayout.error = "Required"
+            isValid = false
+        } else {
+            binding.productTypeLayout.error = null
+        }
+
+        // Validate Product Name
+        if (binding.etProductName.text.isNullOrEmpty()) {
+            binding.productNameLayout.error = "Required"
+            isValid = false
+        } else {
+            binding.productNameLayout.error = null
+        }
+
+        // Validate Price
+        val priceText = binding.etPrice.text.toString()
+        if (priceText.isEmpty()) {
+            binding.priceLayout.error = "Required"
+            isValid = false
+        } else if (!isValidPrice(priceText)) {
+            binding.priceLayout.error = "Price must be greater than 0"
+            isValid = false
+        } else {
+            binding.priceLayout.error = null
+        }
+
+        // Validate Tax
+        val taxText = binding.etTax.text.toString()
+        if (taxText.isEmpty()) {
+            binding.taxLayout.error = "Required"
+            isValid = false
+        } else if (!isValidTax(taxText)) {
+            binding.taxLayout.error = "Tax must be between 0 and 100"
+            isValid = false
+        } else {
+            binding.taxLayout.error = null
+        }
+
+        if (!isValid) {
+            Toast.makeText(context, getString(R.string.validation_error), Toast.LENGTH_SHORT).show()
+        }
+
+        return isValid
     }
 
     private fun submitProduct() {
@@ -102,7 +183,6 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
                     when (state) {
                         is AddProductViewModel.UiState.Success -> {
                             Toast.makeText(context, getString(R.string.success), Toast.LENGTH_SHORT).show()
-                            // Trigger refresh of products list
                             lifecycleScope.launch {
                                 sharedViewModel.refreshProducts()
                             }
@@ -116,48 +196,6 @@ class AddProductBottomSheet : BottomSheetDialogFragment() {
                 }
             }
         }
-    }
-
-    private fun validateInputs(): Boolean {
-        var isValid = true
-
-        // Validate Product Type
-        if (binding.productTypeDropdown.text.isNullOrEmpty()) {
-            binding.productTypeLayout.error = "Required"
-            isValid = false
-        } else {
-            binding.productTypeLayout.error = null
-        }
-
-        // Validate Product Name
-        if (binding.etProductName.text.isNullOrEmpty()) {
-            binding.productNameLayout.error = "Required"
-            isValid = false
-        } else {
-            binding.productNameLayout.error = null
-        }
-
-        // Validate Price
-        if (binding.etPrice.text.isNullOrEmpty()) {
-            binding.priceLayout.error = "Required"
-            isValid = false
-        } else {
-            binding.priceLayout.error = null
-        }
-
-        // Validate Tax
-        if (binding.etTax.text.isNullOrEmpty()) {
-            binding.taxLayout.error = "Required"
-            isValid = false
-        } else {
-            binding.taxLayout.error = null
-        }
-
-        if (!isValid) {
-            Toast.makeText(context, getString(R.string.validation_error), Toast.LENGTH_SHORT).show()
-        }
-
-        return isValid
     }
 
     override fun onDestroyView() {

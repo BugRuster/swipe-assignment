@@ -1,3 +1,4 @@
+// HomeViewModel.kt
 package com.example.testproject.presentation.home.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -5,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.testproject.data.repository.ProductRepository
 import com.example.testproject.domain.model.Product
 import com.example.testproject.utils.Resource
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,38 +22,52 @@ class HomeViewModel(
 
     private var allProducts = emptyList<Product>()
     private val _searchQuery = MutableStateFlow("")
+    private var searchJob: Job? = null
 
     init {
         fetchProducts()
     }
 
-    fun fetchProducts() {
+// HomeViewModel.kt (continued)
+fun fetchProducts() {
         viewModelScope.launch {
             repository.getProducts().collect { result ->
-                _uiState.value = when (result) {
+                when (result) {
                     is Resource.Success -> {
                         allProducts = result.data
-                        UiState.Success(result.data)
+                        // Re-apply current search query
+                        if (_searchQuery.value.isNotEmpty()) {
+                            searchProducts(_searchQuery.value)
+                        } else {
+                            _uiState.value = UiState.Success(result.data)
+                        }
                     }
-                    is Resource.Error -> UiState.Error(result.message)
-                    is Resource.Loading -> UiState.Loading
+                    is Resource.Error -> _uiState.value = UiState.Error(result.message)
+                    is Resource.Loading -> _uiState.value = UiState.Loading
                 }
             }
         }
     }
 
     fun searchProducts(query: String) {
-        _searchQuery.value = query
-        if (query.isEmpty()) {
-            _uiState.value = UiState.Success(allProducts)
-            return
-        }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            _searchQuery.value = query
+            delay(300) // Debounce delay
+            
+            if (query.isEmpty()) {
+                _uiState.value = UiState.Success(allProducts)
+                return@launch
+            }
 
-        val filteredProducts = allProducts.filter {
-            it.productName.contains(query, ignoreCase = true) ||
-                    it.productType.contains(query, ignoreCase = true)
+            val normalizedQuery = query.trim().lowercase()
+            val filteredProducts = allProducts.filter {
+                it.productName.lowercase().contains(normalizedQuery) ||
+                        it.productType.lowercase().contains(normalizedQuery) ||
+                        it.price.toString().contains(normalizedQuery)
+            }
+            _uiState.value = UiState.Success(filteredProducts)
         }
-        _uiState.value = UiState.Success(filteredProducts)
     }
 
     sealed class UiState {
